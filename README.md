@@ -34,6 +34,7 @@ npm run build
 1. In the Netlify dashboard, open **Site settings → Environment variables** and add:
    - `VITE_MONGODB_API_URL` set to your deployed HTTPS API (e.g., `https://api.yourdomain.com`). Do **not** use a `mongodb+srv://` URI—the browser cannot fetch those directly and it exposes credentials.
    - `VITE_ZAI_API_KEY` (and `VITE_ZAI_API_URL` if you are overriding the default AI endpoint).
+   - `MONGODB_URI` set to your MongoDB connection string for the Netlify Functions to connect to the database.
 2. Trigger a new deploy (or enable **Builds → Build hooks** if you want to redeploy automatically on Git pushes).
 3. After deployment, use the live site’s signup/login forms to verify the auth API responds over HTTPS; errors like “Request cannot be constructed from a URL that includes credentials” indicate the variable is still pointing at a `mongodb+srv://` URI.
 
