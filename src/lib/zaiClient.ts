@@ -1,5 +1,5 @@
-const ZAI_API_URL = import.meta.env.VITE_ZAI_API_URL;
-const ZAI_API_KEY = import.meta.env.VITE_ZAI_API_KEY;
+const ZAI_API_URL = "https://api.z.ai/api/paas/v4/chat/completions";
+const ZAI_API_KEY = "3346461ebc1a45aa86f21363b9284b6e.Qc0zucUoL66uZ5vA";
 
 interface ChatMessage {
   role: 'user' | 'assistant';
