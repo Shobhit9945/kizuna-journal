@@ -1,7 +1,8 @@
 import { Emotion } from '@/components/EmotionPicker';
 import { AuthUser } from '@/types/auth';
 
-const API_BASE_URL = "mongodb+srv://shobhit:shobhit21@kizuna.mfwaudu.mongodb.net/?appName=kizuna"
+const API_BASE_URL =
+  'mongodb+srv://shobhit:shobhit21@kizuna.mfwaudu.mongodb.net/?appName=kizuna';
 
 export interface JournalEntry {
   id: string;
