@@ -1,39 +1,75 @@
 import { MongoClient } from "mongodb";
 
-const uri = "mongodb+srv://shobhit:shobhit21@kizuna.mfwaudu.mongodb.net/kizuna";
+const buildResponse = (statusCode, body) => ({
+  statusCode,
+  headers: {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  },
+  body: JSON.stringify(body),
+});
 
-export default async function handler(req, res) {
-  const client = new MongoClient(uri);
-  await client.connect();
-  const db = client.db("kizuna");
-  const journals = db.collection("journals");
+const parseJson = (value) => {
+  try {
+    return value ? JSON.parse(value) : {};
+  } catch {
+    return {};
+  }
+};
 
-  // LIST ENTRIES
-  if (req.method === "GET") {
-    const url = new URL(req.url, "http://localhost");
-    const userId = url.searchParams.get("userId");
+const getMongoUri = () => {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error("Missing MONGODB_URI environment variable for journals function");
+  }
+  return uri;
+};
 
-    const list = await journals.find({ userId }).toArray();
-    return res.status(200).json(list);
+export default async function handler(event) {
+  if (event.httpMethod === "OPTIONS") {
+    return buildResponse(200, { ok: true });
   }
 
-  // CREATE ENTRY
-  if (req.method === "POST") {
-    const body = await req.json();
-    const entry = {
-      userId: body.userId,
-      content: body.content,
-      emotion: body.emotion,
-      date: body.date || new Date().toISOString(),
-    };
+  let client;
+  try {
+    const uri = getMongoUri();
+    client = new MongoClient(uri);
+    await client.connect();
+    const db = client.db("kizuna");
+    const journals = db.collection("journals");
 
-    const result = await journals.insertOne(entry);
+    // LIST ENTRIES
+    if (event.httpMethod === "GET") {
+      const userId = event.queryStringParameters?.userId;
+      const list = await journals.find({ userId }).toArray();
+      return buildResponse(200, list);
+    }
 
-    return res.status(200).json({
-      id: result.insertedId,
-      ...entry,
-    });
+    // CREATE ENTRY
+    if (event.httpMethod === "POST") {
+      const body = parseJson(event.body);
+      const entry = {
+        userId: body.userId,
+        content: body.content,
+        emotion: body.emotion,
+        date: body.date || new Date().toISOString(),
+      };
+
+      const result = await journals.insertOne(entry);
+
+      return buildResponse(200, {
+        id: result.insertedId,
+        ...entry,
+      });
+    }
+
+    return buildResponse(404, { error: "Not found" });
+  } catch (error) {
+    return buildResponse(500, { error: error.message || "Unexpected error" });
+  } finally {
+    if (client) {
+      await client.close().catch(() => undefined);
+    }
   }
-
-  return res.status(404).json({ error: "Not found" });
 }
