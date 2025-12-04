@@ -1,7 +1,7 @@
 import { AuthSession, AuthUser, UserRole } from '@/types/auth';
 
 const API_BASE_URL =
-  'mongodb+srv://shobhit:shobhit21@kizuna.mfwaudu.mongodb.net/?appName=kizuna';
+  ((import.meta.env.VITE_MONGODB_API_URL as string | undefined) ?? '').replace(/\/$/, '');
 const LOCAL_SESSION_KEY = 'kizuna-journal-session';
 
 const parseJson = <T>(value: string | null, fallback: T): T => {
@@ -10,6 +10,23 @@ const parseJson = <T>(value: string | null, fallback: T): T => {
   } catch {
     return fallback;
   }
+};
+
+const getApiBaseUrl = (): string => {
+  if (!API_BASE_URL) {
+    throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to enable auth.');
+  }
+
+  try {
+    const parsed = new URL(API_BASE_URL);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error('');
+    }
+  } catch {
+    throw new Error('Invalid MongoDB API URL. Expected an HTTP(S) endpoint.');
+  }
+
+  return API_BASE_URL;
 };
 
 const persistSession = (session: AuthSession | null, user: AuthUser | null) => {
@@ -58,11 +75,9 @@ export const mongoService = {
     fullName: string,
     studentId?: string
   ): Promise<{ user: AuthUser; session: AuthSession }> {
-    if (!API_BASE_URL) {
-      throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to enable sign up.');
-    }
+    const baseUrl = getApiBaseUrl();
 
-    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+    const response = await fetch(`${baseUrl}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -85,11 +100,9 @@ export const mongoService = {
   },
 
   async signIn(email: string, password: string): Promise<{ user: AuthUser; session: AuthSession }> {
-    if (!API_BASE_URL) {
-      throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to enable sign in.');
-    }
+    const baseUrl = getApiBaseUrl();
 
-    const response = await fetch(`${API_BASE_URL}/auth/signin`, {
+    const response = await fetch(`${baseUrl}/auth/signin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -103,9 +116,8 @@ export const mongoService = {
   },
 
   async signOut() {
-    if (API_BASE_URL) {
-      await fetch(`${API_BASE_URL}/auth/signout`, { method: 'POST' }).catch(() => undefined);
-    }
+    const baseUrl = getApiBaseUrl();
+    await fetch(`${baseUrl}/auth/signout`, { method: 'POST' }).catch(() => undefined);
     persistSession(null, null);
   },
 };
