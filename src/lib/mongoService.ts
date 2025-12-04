@@ -1,6 +1,7 @@
 import { AuthSession, AuthUser, UserRole } from '@/types/auth';
 
-const API_BASE_URL = import.meta.env.VITE_MONGODB_API_URL;
+const API_BASE_URL =
+  'mongodb+srv://shobhit:shobhit21@kizuna.mfwaudu.mongodb.net/?appName=kizuna';
 const LOCAL_SESSION_KEY = 'kizuna-journal-session';
 
 const parseJson = <T>(value: string | null, fallback: T): T => {
