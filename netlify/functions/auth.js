@@ -26,7 +26,7 @@ const getMongoUri = () => {
   return uri;
 };
 
-export default async function handler(event) {
+export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return buildResponse(200, { ok: true });
   }
@@ -93,4 +93,4 @@ export default async function handler(event) {
       await client.close().catch(() => undefined);
     }
   }
-}
+};
