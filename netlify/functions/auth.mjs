@@ -1,4 +1,4 @@
-const { MongoClient } = require("mongodb");
+import { MongoClient } from "mongodb";
 
 const buildResponse = (statusCode, body) => ({
   statusCode,
