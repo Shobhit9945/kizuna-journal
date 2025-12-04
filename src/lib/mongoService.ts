@@ -1,7 +1,6 @@
 import { AuthSession, AuthUser, UserRole } from '@/types/auth';
 
-const API_BASE_URL =
-  'mongodb+srv://shobhit:shobhit21@kizuna.mfwaudu.mongodb.net/?appName=kizuna';
+const API_BASE_URL = import.meta.env.VITE_MONGODB_API_URL;
 const LOCAL_SESSION_KEY = 'kizuna-journal-session';
 
 const parseJson = <T>(value: string | null, fallback: T): T => {
@@ -58,6 +57,10 @@ export const mongoService = {
     fullName: string,
     studentId?: string
   ): Promise<{ user: AuthUser; session: AuthSession }> {
+    if (!API_BASE_URL) {
+      throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to enable sign up.');
+    }
+
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -81,6 +84,10 @@ export const mongoService = {
   },
 
   async signIn(email: string, password: string): Promise<{ user: AuthUser; session: AuthSession }> {
+    if (!API_BASE_URL) {
+      throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to enable sign in.');
+    }
+
     const response = await fetch(`${API_BASE_URL}/auth/signin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

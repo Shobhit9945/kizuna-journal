@@ -5,15 +5,22 @@ A bilingual journaling experience for students with AI-powered reflection. The a
 ## Tech stack
 - Vite + React + TypeScript
 - Tailwind CSS + shadcn/ui components
-- MongoDB-backed API layer (connection URI is embedded in the code)
-- Z.AI for AI-assisted journaling conversations (API URL and key embedded in the code)
+- MongoDB-backed API layer (configurable via environment)
+- Z.AI for AI-assisted journaling conversations
 
 ## Getting started
 1. Install dependencies
    ```sh
    npm install
    ```
-2. Run the dev server
+2. Configure environment
+   ```sh
+   # .env.local
+   VITE_MONGODB_API_URL=https://your-api.example.com
+   VITE_ZAI_API_URL=https://zai.example.com/v1/chat
+   VITE_ZAI_API_KEY=your-zai-api-key
+   ```
+3. Run the dev server
    ```sh
    npm run dev
    ```
@@ -24,5 +31,5 @@ npm run build
 ```
 
 ## Notes
-- The MongoDB connection string and Z.AI API credentials are hardcoded in the client for convenience.
-- Update `src/lib/mongoService.ts`, `src/lib/journalService.ts`, and `src/lib/zaiClient.ts` if you want to change them.
+- AI responses will fall back to a placeholder when `VITE_ZAI_API_KEY`/`VITE_ZAI_API_URL` are missing.
+- Authentication, session handling, and journals require the MongoDB API; ensure `VITE_MONGODB_API_URL` is configured for Netlify deployments.

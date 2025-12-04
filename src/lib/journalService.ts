@@ -1,8 +1,7 @@
 import { Emotion } from '@/components/EmotionPicker';
 import { AuthUser } from '@/types/auth';
 
-const API_BASE_URL =
-  'mongodb+srv://shobhit:shobhit21@kizuna.mfwaudu.mongodb.net/?appName=kizuna';
+const API_BASE_URL = import.meta.env.VITE_MONGODB_API_URL;
 
 export interface JournalEntry {
   id: string;
@@ -29,6 +28,10 @@ const handleApiResponse = async (response: Response) => {
 
 export const journalService = {
   async list(user: AuthUser): Promise<JournalEntry[]> {
+    if (!API_BASE_URL) {
+      throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to load journals.');
+    }
+
     const response = await fetch(`${API_BASE_URL}/journals?userId=${encodeURIComponent(user.id)}`);
     const data = await handleApiResponse(response);
     if (Array.isArray(data)) {
@@ -51,6 +54,10 @@ export const journalService = {
       content: input.content,
       emotion: input.emotion,
     };
+
+    if (!API_BASE_URL) {
+      throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to save journals.');
+    }
 
     const response = await fetch(`${API_BASE_URL}/journals`, {
       method: 'POST',
