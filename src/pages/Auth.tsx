@@ -43,6 +43,7 @@ export const Auth: React.FC = () => {
           toast.error(error);
         } else {
           toast.success(t('signupSuccess'));
+          navigate('/');
         }
       } else {
         const { error } = await signIn(email, password);
@@ -50,6 +51,7 @@ export const Auth: React.FC = () => {
           toast.error(error);
         } else {
           toast.success(t('loginSuccess'));
+          navigate('/');
         }
       }
     } finally {
