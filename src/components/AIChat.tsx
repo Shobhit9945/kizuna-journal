@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { zaiClient } from '@/lib/zaiClient';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -42,27 +44,37 @@ export const AIChat: React.FC<AIChatProps> = ({ journalContext }) => {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'user',
       content: input.trim(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const conversation = [...messages, userMessage];
+
+    setMessages(conversation);
     setInput('');
     setIsLoading(true);
 
-    // Placeholder for AI response - will be connected to Z.AI later
-    setTimeout(() => {
+    try {
+      const response = await zaiClient.chat({
+        messages: conversation.map(({ role, content }) => ({ role, content })),
+        language,
+        journalContext,
+      });
+
       const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
+        id: crypto.randomUUID(),
         role: 'assistant',
-        content: language === 'ja'
-          ? 'AIの応答はZ.AI APIキーを設定した後に有効になります。今はプレースホルダーメッセージを表示しています。'
-          : 'AI responses will be enabled after you configure your Z.AI API key. This is a placeholder message for now.',
+        content: response,
       };
+
       setMessages((prev) => [...prev, aiResponse]);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message || t('errorOccurred'));
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

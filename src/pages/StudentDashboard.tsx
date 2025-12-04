@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { StudentNavbar } from '@/components/StudentNavbar';
@@ -9,56 +9,81 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Emotion } from '@/components/EmotionPicker';
 import { Calendar, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface JournalEntry {
-  id: string;
-  date: string;
-  content: string;
-  emotion: Emotion;
-}
+import { journalService, JournalEntry } from '@/lib/journalService';
 
 export const StudentDashboard: React.FC = () => {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Mock data - will be connected to MongoDB later
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([
-    {
-      id: '1',
-      date: '2024-01-15',
-      content: language === 'ja' 
-        ? '今日は数学のテストがあった。思ったより難しかったけど、頑張った！'
-        : 'Had a math test today. It was harder than I expected, but I did my best!',
-      emotion: 'anxious',
-    },
-    {
-      id: '2',
-      date: '2024-01-14',
-      content: language === 'ja'
-        ? '友達と放課後にカフェに行った。楽しかった！'
-        : 'Went to a cafe with friends after school. Had so much fun!',
-      emotion: 'happy',
-    },
-  ]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingEntries, setIsLoadingEntries] = useState(true);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+
+  useEffect(() => {
+    const loadEntries = async () => {
+      if (!user) return;
+      setIsLoadingEntries(true);
+      try {
+        const entries = await journalService.list(user);
+        if (entries.length === 0) {
+          const seeded = await seedSampleEntries(user);
+          setJournalEntries(seeded);
+        } else {
+          setJournalEntries(entries);
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error(t('errorOccurred'));
+      } finally {
+        setIsLoadingEntries(false);
+      }
+    };
+
+    loadEntries();
+  }, [user]);
+
+  const seedSampleEntries = async (currentUser: NonNullable<typeof user>) => {
+    const defaults = [
+      {
+        date: '2024-01-15',
+        content: language === 'ja'
+          ? '今日は数学のテストがあった。思ったより難しかったけど、頑張った！'
+          : 'Had a math test today. It was harder than I expected, but I did my best!',
+        emotion: 'anxious' as Emotion,
+      },
+      {
+        date: '2024-01-14',
+        content: language === 'ja'
+          ? '友達と放課後にカフェに行った。楽しかった！'
+          : 'Went to a cafe with friends after school. Had so much fun!',
+        emotion: 'happy' as Emotion,
+      },
+    ];
+
+    const created: JournalEntry[] = [];
+    for (const entry of defaults) {
+      const saved = await journalService.create(currentUser, entry);
+      created.push(saved);
+    }
+    return created;
+  };
 
   const handleSaveJournal = async (entry: { content: string; emotion: Emotion }) => {
-    setIsLoading(true);
+    if (!user) return;
+    setIsSaving(true);
     try {
-      // Placeholder - will save to MongoDB later
-      const newEntry: JournalEntry = {
-        id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0],
+      const savedEntry = await journalService.create(user, {
         content: entry.content,
         emotion: entry.emotion,
-      };
-      setJournalEntries((prev) => [newEntry, ...prev]);
+        date: new Date().toISOString(),
+      });
+      setJournalEntries((prev) => [savedEntry, ...prev]);
       toast.success(t('journalSaved'));
     } catch (error) {
+      console.error(error);
       toast.error(t('errorOccurred'));
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -77,11 +102,20 @@ export const StudentDashboard: React.FC = () => {
   };
 
   const renderContent = () => {
+    if (isLoadingEntries && journalEntries.length === 0) {
+      return (
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Sparkles className="h-5 w-5 animate-spin" />
+          {t('loading')}
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'journal':
         return (
           <div className="space-y-6">
-            <JournalEditor onSave={handleSaveJournal} isLoading={isLoading} />
+            <JournalEditor onSave={handleSaveJournal} isLoading={isSaving} />
             <AIChat />
           </div>
         );
@@ -154,7 +188,7 @@ export const StudentDashboard: React.FC = () => {
             <StudentStats streak={5} totalEntries={journalEntries.length} />
 
             {/* Quick Journal */}
-            <JournalEditor onSave={handleSaveJournal} isLoading={isLoading} />
+            <JournalEditor onSave={handleSaveJournal} isLoading={isSaving} />
 
             {/* AI Chat */}
             <AIChat />
