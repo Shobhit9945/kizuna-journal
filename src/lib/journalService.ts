@@ -2,7 +2,7 @@ import { Emotion } from '@/components/EmotionPicker';
 import { AuthUser } from '@/types/auth';
 
 const API_BASE_URL =
-  'mongodb+srv://shobhit:shobhit21@kizuna.mfwaudu.mongodb.net/?appName=kizuna';
+  ((import.meta.env.VITE_MONGODB_API_URL as string | undefined) ?? '').replace(/\/$/, '');
 
 export interface JournalEntry {
   id: string;
@@ -18,6 +18,23 @@ interface CreateEntryInput {
   date?: string;
 }
 
+const getApiBaseUrl = (): string => {
+  if (!API_BASE_URL) {
+    throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to load journals.');
+  }
+
+  try {
+    const parsed = new URL(API_BASE_URL);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error('');
+    }
+  } catch {
+    throw new Error('Invalid MongoDB API URL. Expected an HTTP(S) endpoint.');
+  }
+
+  return API_BASE_URL;
+};
+
 const handleApiResponse = async (response: Response) => {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -29,11 +46,9 @@ const handleApiResponse = async (response: Response) => {
 
 export const journalService = {
   async list(user: AuthUser): Promise<JournalEntry[]> {
-    if (!API_BASE_URL) {
-      throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to load journals.');
-    }
+    const baseUrl = getApiBaseUrl();
 
-    const response = await fetch(`${API_BASE_URL}/journals?userId=${encodeURIComponent(user.id)}`);
+    const response = await fetch(`${baseUrl}/journals?userId=${encodeURIComponent(user.id)}`);
     const data = await handleApiResponse(response);
     if (Array.isArray(data)) {
       return data.map((entry) => ({
@@ -56,11 +71,9 @@ export const journalService = {
       emotion: input.emotion,
     };
 
-    if (!API_BASE_URL) {
-      throw new Error('Missing MongoDB API URL. Set VITE_MONGODB_API_URL to save journals.');
-    }
+    const baseUrl = getApiBaseUrl();
 
-    const response = await fetch(`${API_BASE_URL}/journals`, {
+    const response = await fetch(`${baseUrl}/journals`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
